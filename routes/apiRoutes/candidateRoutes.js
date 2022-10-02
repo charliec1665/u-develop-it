@@ -3,7 +3,7 @@ const router = express.Router();
 const db = require('../../db/connection');
 const inputCheck = require('../../utils/inputCheck');
 
-// GET all candidates
+// GET all candidates and their party affiliation
 router.get('/candidates', (req, res) => {
     const sql = `SELECT candidates.*, parties.name
         AS party_name
@@ -24,7 +24,7 @@ router.get('/candidates', (req, res) => {
   });
 
 
-// GET a single candidate
+// GET a single candidate with party affiliation
 router.get('/candidate/:id', (req, res) => {
     const sql = `SELECT candidates.*, parties.name
         AS party_name
@@ -46,31 +46,6 @@ router.get('/candidate/:id', (req, res) => {
     });
   });
 
-// DELETE a candidate
-// Here DELETE statement has a ? that denotes a placeholder, making this a *prepared statement*
-    // a prepared statement can execute the same SQL statements repeatedly using different values in place of the ?
-    // the additional param argument following the prepared statement provides values to use in place of the ?
-router.delete('/candidate/:id', (req, res) => {
-    const sql = `DELETE FROM candidates WHERE id = ?`;
-    const params = [req.params.id];
-  
-    db.query(sql, params, (err, result) => {
-      if (err) {
-        res.statusMessage(400).json({ error: res.message });
-      } else if (!result.affectedRows) {
-        res.json({
-          message: 'Candidate not found'
-        });
-      } else {
-        res.json({
-          message: 'deleted',
-          changes: result.affectedRows,
-          id: req.params.id
-        });
-      }
-    });
-  });
-
 // Create a candidate via POST method
 router.post('/candidate', ({ body }, res) => {
     // inputCheck was provided and verifies that user info in the request can create a candidate
@@ -80,9 +55,9 @@ router.post('/candidate', ({ body }, res) => {
         return;
     }
 
-    const sql = `INSERT INTO candidates (first_name, last_name, industry_connected)
-        VALUES (?,?,?)`;
-    const params = [body.first_name, body.last_name, body.industry_connected];
+    const sql = `INSERT INTO candidates (first_name, last_name, industry_connected, party_id)
+        VALUES (?,?,?,?)`;
+    const params = [body.first_name, body.last_name, body.industry_connected, body.party_id];
   
     db.query(sql, params, (err, result) => {
         if (err) {
@@ -125,5 +100,30 @@ router.put('/candidate/:id', (req, res) => {
         }
     });
 });
+
+// DELETE a candidate
+// Here DELETE statement has a ? that denotes a placeholder, making this a *prepared statement*
+    // a prepared statement can execute the same SQL statements repeatedly using different values in place of the ?
+    // the additional param argument following the prepared statement provides values to use in place of the ?
+    router.delete('/candidate/:id', (req, res) => {
+      const sql = `DELETE FROM candidates WHERE id = ?`;
+      const params = [req.params.id];
+    
+      db.query(sql, params, (err, result) => {
+        if (err) {
+          res.status(400).json({ error: res.message });
+        } else if (!result.affectedRows) {
+          res.json({
+            message: 'Candidate not found'
+          });
+        } else {
+          res.json({
+            message: 'deleted',
+            changes: result.affectedRows,
+            id: req.params.id
+          });
+        }
+      });
+    });
 
 module.exports = router;
